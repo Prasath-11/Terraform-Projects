@@ -1,0 +1,37 @@
+---
+- name: Install docker and run sonarqube
+  hosts: servers
+  become: yes
+
+  tasks:
+  - name: Update apt package index
+    apt:
+     update_cache: yes
+     cache_valid_time: 3600
+
+  - name: Install Docker
+    apt:
+     name: docker.io
+     state: present
+     update_cache: yes
+  - name: Add user to docker group
+    user:
+     name: "{{ ansible_user }}"
+     groups: docker
+     append: yes
+  - name: Ensure Docker is started and enabled
+    systemd:
+     name: docker
+     state: started
+     enabled: yes
+  - name: Set Docker socket permissions
+    file:
+     path: /var/run/docker.sock
+     mode: "0666"
+  - name: Run SonarQube container
+    docker_container:
+     name: sonarqube
+     image: sonarqube:lts-community
+     state: started
+     ports:
+       - 9000:9000
